@@ -14,7 +14,7 @@ pub extern "system" fn Java_com_ember_android_EmberClient_connect(
     _class: JClass,
     server_addr: JString,
 ) -> jstring {
-    let addr_str: String = match env.get_string(server_addr) {
+    let addr_str: String = match env.get_string(&server_addr) {
         Ok(s) => s.into(),
         Err(e) => return env.new_string(format!("Error: {}", e)).unwrap().into_raw(),
     };
@@ -27,7 +27,7 @@ pub extern "system" fn Java_com_ember_android_EmberClient_connect(
         }
     };
 
-    match ember_native::connect_echo(server_addr) {
+    match crate::connect_echo(server_addr) {
         Ok(response) => env.new_string(response).unwrap().into_raw(),
         Err(e) => env.new_string(format!("Error: {}", e)).unwrap().into_raw(),
     }
