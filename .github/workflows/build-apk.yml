@@ -53,21 +53,37 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Create signing keystore
+        run: |
+          mkdir -p ember/android
+          keytool -genkey -v -keystore ember/android/ember.keystore -alias ember -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android -dname "CN=Ember, OU=Dev, O=Ember, L=City, S=State, C=US"
+
       - name: Build APK
         working-directory: ember/android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/ember/android/ember.keystore
+          ANDROID_KEYSTORE_PASSWORD: android
+          ANDROID_KEY_ALIAS: ember
+          ANDROID_KEY_PASSWORD: android
         run: chmod +x gradlew && ./gradlew assembleRelease
+
+      - name: Rename APK to ember.apk
+        run: |
+          APK=$(ls ember/android/app/build/outputs/apk/release/app-release*.apk 2>/dev/null | head -1)
+          cp "$APK" ember.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ember-apk
-          path: ember/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: ember.apk
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ember/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          files: ember.apk
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
