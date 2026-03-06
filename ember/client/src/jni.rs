@@ -10,7 +10,7 @@ use jni::JNIEnv;
 /// Called from Kotlin: EmberClient.connect(serverAddr: String): String
 #[no_mangle]
 pub extern "system" fn Java_com_ember_android_EmberClient_connect(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     server_addr: JString,
 ) -> jstring {
