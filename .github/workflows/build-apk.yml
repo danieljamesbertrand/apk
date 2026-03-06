@@ -1,0 +1,71 @@
+name: Build APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ember/target
+          key: ${{ runner.os }}-ember-cargo-${{ hashFiles('ember/**/Cargo.lock', 'ember/Cargo.lock') }}
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      - name: Setup Android NDK
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+
+      - name: Add Android targets
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi
+
+      - name: Build Rust library
+        working-directory: ember
+        env:
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: |
+          mkdir -p android/app/src/main/jniLibs
+          cargo ndk -t arm64-v8a -t armeabi-v7a -o android/app/src/main/jniLibs build -p ember-client --features android --release
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build APK
+        working-directory: ember/android
+        run: chmod +x gradlew && ./gradlew assembleRelease
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ember-apk
+          path: ember/android/app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ember/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

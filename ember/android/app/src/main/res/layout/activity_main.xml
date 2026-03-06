@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ember QUIC Client"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp" />
+
+    <EditText
+        android:id="@+id/server_address"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Server address (e.g. 192.168.1.100:4433)"
+        android:inputType="text"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/connect_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Connect"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/result_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="14sp"
+        android:minHeight="80dp"
+        android:padding="8dp"
+        android:background="?attr/selectableItemBackground" />
+
+</LinearLayout>
