@@ -71,8 +71,10 @@ impl ServerCertVerifier for SkipServerVerification {
     }
 }
 
-fn configure_client() -> Result<ClientConfig, Box<dyn std::error::Error + Send + Sync>> {
-    let crypto = RustlsClientConfig::builder()
+fn configure_client(provider: Arc<CryptoProvider>) -> Result<ClientConfig, Box<dyn std::error::Error + Send + Sync>> {
+    let crypto = RustlsClientConfig::builder_with_provider(provider)
+        .with_safe_default_protocol_versions()
+        .map_err(|e| format!("{:?}", e))?
         .dangerous()
         .with_custom_certificate_verifier(SkipServerVerification::new())
         .with_no_client_auth();
@@ -86,20 +88,18 @@ fn configure_client() -> Result<ClientConfig, Box<dyn std::error::Error + Send +
 /// Connect to the ember QUIC server and return the echo response.
 /// Blocking wrapper around the async logic.
 pub fn connect_echo(server_addr: SocketAddr) -> Result<String, String> {
-    rustls::crypto::ring::default_provider()
-        .install_default()
-        .map_err(|_| "Failed to install rustls crypto provider".to_string())?;
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
 
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .map_err(|e| e.to_string())?;
 
-    rt.block_on(async_run(server_addr)).map_err(|e| e.to_string())
+    rt.block_on(async_run(server_addr, provider)).map_err(|e| e.to_string())
 }
 
-async fn async_run(server_addr: SocketAddr) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    let client_config = configure_client()?;
+async fn async_run(server_addr: SocketAddr, provider: Arc<CryptoProvider>) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    let client_config = configure_client(provider)?;
     let mut endpoint = Endpoint::client("0.0.0.0:0".parse()?)?;
     endpoint.set_default_client_config(client_config);
 
