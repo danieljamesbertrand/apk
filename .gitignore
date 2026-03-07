@@ -1,0 +1,4 @@
+*.apk
+.DS_Store
+ember/target
+ember/android/ember.keystore
